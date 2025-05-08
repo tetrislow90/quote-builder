@@ -73,18 +73,15 @@
     <input type="text" id="projectTitle" placeholder="Enter project title">
   </section>
 
-  <button id="addSection">Add Section</button>
-  <button id="addRow">Add Row</button>
-  <button id="downloadPdf">Download PDF</button>
-
   <table id="quoteTable">
     <thead>
       <tr>
         <th>S/N</th>
-        <th>Work Scope</th>
+        <th>Scope</th>
         <th>Description</th>
-        <th>Manual Desc</th>
+        <th>Details</th>
         <th>Quantity</th>
+        <th>Actual Cost</th>
         <th>Margin (%)</th>
         <th>Unit Cost (w/ Margin)</th>
         <th>Amount</th>
@@ -98,9 +95,138 @@
       </tr>
     </tfoot>
   </table>
-
+  
+  <button id="addSection">Add Section</button>
+  <button id="addRow">Add Row</button>
+  <button id="downloadPdf">Download PDF</button>
+  
   <script>
-    // ... existing JS for data, row creation, totals, PDF ...
+    const priceData = {
+      "Carpentry": [
+        { desc: "Kitchen Cabinet (Upper)", cost: 180 },
+        { desc: "Wardrobe (Sliding Door)", cost: 250 },
+        { desc: "Office Desk (Large)", cost: 320 },
+        { desc: "Bookshelf (5-tier)", cost: 150 },
+        { desc: "TV Console (Modern)", cost: 280 }
+      ],
+      "Electrical Works": [
+        { desc: "Double Socket Point", cost: 90 },
+        { desc: "Light Fixture Installation", cost: 120 },
+        { desc: "Ceiling Fan Wiring", cost: 200 },
+        { desc: "LED Panel Setup", cost: 160 },
+        { desc: "Motion Sensor", cost: 95 }
+      ],
+      "Tiling": [
+        { desc: "Floor Tiling (600x600)", cost: 8 },
+        { desc: "Wall Tiling (300x300)", cost: 6 },
+        { desc: "Grouting Service", cost: 2.5 },
+        { desc: "Skirting Installation", cost: 4 },
+        { desc: "Outdoor Stone Tiles", cost: 12 }
+      ],
+      "Painting": [
+        { desc: "Whole House", cost: 1800 },
+        { desc: "Accent Wall", cost: 450 },
+        { desc: "Ceiling Painting", cost: 600 },
+        { desc: "Wood Stain Finish", cost: 350 },
+        { desc: "Protective Coating", cost: 220 }
+      ]
+    };
+
+    let sectionCount = 0;
+    const sectionsContainer = document.getElementById('sectionsContainer');
+    const subTotalEl = document.getElementById('subTotal');
+    const roundOffEl = document.getElementById('roundOff');
+    const totalQuoteEl = document.getElementById('totalQuote');
+
+    document.getElementById('addSectionBtn').addEventListener('click', createSection);
+    roundOffEl.addEventListener('input', updateTotals);
+    document.getElementById('downloadPdfBtn').addEventListener('click', downloadPDF);
+
+    function createSection() {
+      const name = document.getElementById('newSectionName').value.trim();
+      if (!name) return;
+      sectionCount++;
+      const div = document.createElement('div');
+      div.className = 'section';
+      div.id = 'section-' + sectionCount;
+      div.innerHTML = `
+        <h3>${name}</h3>
+        <table id="table-${sectionCount}">
+          <thead>
+            <tr><th>Work Scope</th><th>Description</th><th>Manual Desc</th><th>Cost</th><th>Qty</th><th>Margin (%)</th><th>Unit Cost</th><th>Amount</th><th>Action</th></tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot>
+            <tr><th colspan="7" style="text-align:right;">Total:</th><td><span id="sectionTotal-${sectionCount}">0.00</span></td><td></td></tr>
+          </tfoot>
+        </table>
+        <button class="addRowBtn" data-section="${sectionCount}">Add Row</button>
+      `;
+      sectionsContainer.appendChild(div);
+      document.getElementById('newSectionName').value = '';
+      div.querySelector('.addRowBtn').addEventListener('click', () => addRow(sectionCount));
+    }
+
+    function addRow(sectionId) {
+      const tbody = document.querySelector(`#table-${sectionId} tbody`);
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><input type="text" placeholder="Work Scope"></td>
+        <td><input type="text" placeholder="Description"></td>
+        <td><textarea placeholder="Manual Desc"></textarea></td>
+        <td><input type="number" class="cost" value="0" step="0.01"></td>
+        <td><input type="number" class="qty" value="1" min="1"></td>
+        <td><input type="number" class="margin" value="20" min="0"></td>
+        <td><span class="unitCost">0.00</span></td>
+        <td><span class="amount">0.00</span></td>
+        <td><button class="removeRowBtn">Remove</button></td>
+      `;
+      tbody.appendChild(row);
+      row.querySelectorAll('input, textarea').forEach(el => el.addEventListener('input', () => computeRow(sectionId)));
+      row.querySelector('.removeRowBtn').addEventListener('click', () => { row.remove(); computeRow(sectionId); });
+      computeRow(sectionId);
+    }
+
+    function computeRow(sectionId) {
+      const section = document.getElementById('section-' + sectionId);
+      const rows = section.querySelectorAll('tbody tr');
+      let total = 0;
+      rows.forEach(r => {
+        const cost = parseFloat(r.querySelector('.cost').value) || 0;
+        const qty = parseFloat(r.querySelector('.qty').value) || 0;
+        const margin = parseFloat(r.querySelector('.margin').value) || 0;
+        const unit = cost * (1 + margin/100);
+        const amt = unit * qty;
+        r.querySelector('.unitCost').textContent = unit.toFixed(2);
+        r.querySelector('.amount').textContent = amt.toFixed(2);
+        total += amt;
+      });
+      document.getElementById(`sectionTotal-${sectionId}`).textContent = total.toFixed(2);
+      updateTotals();
+    }
+
+    function updateTotals() {
+      let subTotal = 0;
+      for (let i = 1; i <= sectionCount; i++) {
+        const el = document.getElementById(`sectionTotal-${i}`);
+        if (el) subTotal += parseFloat(el.textContent) || 0;
+      }
+      subTotalEl.textContent = subTotal.toFixed(2);
+      const roundOff = parseFloat(roundOffEl.value) || 0;
+      totalQuoteEl.textContent = (subTotal - roundOff).toFixed(2);
+    }
+
+    function downloadPDF() {
+      html2canvas(document.body, { scale: 0.5 }).then(canvas => {
+        const img = canvas.toDataURL('image/jpeg', 0.7);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'pt', 'a4');
+        const w = pdf.internal.pageSize.getWidth();
+        const h = canvas.height * w / canvas.width;
+        pdf.addImage(img, 'JPEG', 0, 0, w, h);
+        pdf.save('quote.pdf');
+      });
+    }
   </script>
 
   <footer>
