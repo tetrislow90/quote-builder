@@ -6,44 +6,35 @@
   <title>El Arte Quote Builder</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
-    form label { display: block; margin: 10px 0; }
-    input, select { width: 200px; padding: 4px; }
-    #results p { margin: 6px 0; }
-    #results span { font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #f0f0f0; }
+    input[type="number"], select { width: 100%; box-sizing: border-box; padding: 4px; }
+    button { padding: 8px 12px; margin-top: 10px; }
   </style>
 </head>
 <body>
-  <h1>El Arte Quote Builder (Free)</h1>
-  <form id="quoteForm">
-    <label>
-      Work Scope:
-      <select id="scopeSelect">
-        <option value="">--Select Scope--</option>
-      </select>
-    </label>
-    <label>
-      Description:
-      <select id="descSelect">
-        <option value="">--Select Item--</option>
-      </select>
-    </label>
-    <label>
-      Quantity:
-      <input type="number" id="quantity" value="1" min="0">
-    </label>
-    <label>
-      Margin (%):
-      <input type="number" id="margin" value="20" min="0">
-    </label>
-  </form>
-  <div id="results">
-    <p>Actual Cost: SGD <span id="actualCost">0.00</span></p>
-    <p>Unit Cost (w/ Margin): SGD <span id="unitCost">0.00</span></p>
-    <p>Amount: SGD <span id="amount">0.00</span></p>
-    <p>Profit: SGD <span id="profit">0.00</span></p>
-  </div>
+  <h1>El Arte Quote Builder</h1>
+  <table id="quoteTable">
+    <thead>
+      <tr>
+        <th>S/N</th>
+        <th>Work Scope</th>
+        <th>Description</th>
+        <th>Quantity</th>
+        <th>Margin (%)</th>
+        <th>Actual Cost</th>
+        <th>Unit Cost (w/ Margin)</th>
+        <th>Amount</th>
+        <th>Profit</th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+  <button id="addRow">Add Row</button>
+
   <script>
-    // Sample cost data (replace with real values as needed)
     const priceData = {
       "Carpentry": [
         { desc: "Kitchen Cabinet (Upper)", cost: 180 },
@@ -60,55 +51,78 @@
       ]
     };
 
-    const scopeSelect = document.getElementById('scopeSelect');
-    const descSelect = document.getElementById('descSelect');
-    const qtyInput = document.getElementById('quantity');
-    const marginInput = document.getElementById('margin');
-    const actualCostEl = document.getElementById('actualCost');
-    const unitCostEl = document.getElementById('unitCost');
-    const amountEl = document.getElementById('amount');
-    const profitEl = document.getElementById('profit');
+    const tableBody = document.querySelector('#quoteTable tbody');
+    const addRowBtn = document.getElementById('addRow');
+    let rowCount = 0;
 
-    // Populate Work Scope dropdown
-    Object.keys(priceData).forEach(scope => {
-      const opt = document.createElement('option');
-      opt.value = scope;
-      opt.textContent = scope;
-      scopeSelect.appendChild(opt);
-    });
+    function createRow() {
+      rowCount++;
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${rowCount}</td>
+        <td><select class="scope"></select></td>
+        <td><select class="desc"></select></td>
+        <td><input type="number" class="qty" value="1" min="0"></td>
+        <td><input type="number" class="margin" value="20" min="0"></td>
+        <td><span class="actualCost">0.00</span></td>
+        <td><span class="unitCost">0.00</span></td>
+        <td><span class="amount">0.00</span></td>
+        <td><span class="profit">0.00</span></td>
+      `;
+      tableBody.appendChild(row);
 
-    // When scope changes, populate Description dropdown
-    scopeSelect.addEventListener('change', () => {
-      const items = priceData[scopeSelect.value] || [];
-      descSelect.innerHTML = '<option value="">--Select Item--</option>';
-      items.forEach(item => {
+      const scopeSelect = row.querySelector('.scope');
+      const descSelect = row.querySelector('.desc');
+      const qtyInput = row.querySelector('.qty');
+      const marginInput = row.querySelector('.margin');
+      const actualCostEl = row.querySelector('.actualCost');
+      const unitCostEl = row.querySelector('.unitCost');
+      const amountEl = row.querySelector('.amount');
+      const profitEl = row.querySelector('.profit');
+
+      // Populate Work Scope
+      Object.keys(priceData).forEach(scope => {
         const opt = document.createElement('option');
-        opt.value = item.cost;              // store cost in value
-        opt.textContent = item.desc;
-        descSelect.appendChild(opt);
+        opt.value = scope;
+        opt.textContent = scope;
+        scopeSelect.appendChild(opt);
       });
-      updateResults();
-    });
 
-    // Update whenever Description, Quantity, or Margin changes
-    descSelect.addEventListener('change', updateResults);
-    qtyInput.addEventListener('input', updateResults);
-    marginInput.addEventListener('input', updateResults);
+      scopeSelect.addEventListener('change', () => {
+        const items = priceData[scopeSelect.value] || [];
+        descSelect.innerHTML = '<option value="">--Select--</option>';
+        items.forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = item.cost;
+          opt.textContent = item.desc;
+          descSelect.appendChild(opt);
+        });
+        updateRow();
+      });
 
-    function updateResults() {
-      const actual = parseFloat(descSelect.value) || 0;
-      const margin = parseFloat(marginInput.value) || 0;
-      const qty = parseFloat(qtyInput.value) || 0;
+      descSelect.addEventListener('change', updateRow);
+      qtyInput.addEventListener('input', updateRow);
+      marginInput.addEventListener('input', updateRow);
 
-      const unit = actual * (1 + margin / 100);
-      const amount = unit * qty;
-      const profit = amount - actual * qty;
+      function updateRow() {
+        const actual = parseFloat(descSelect.value) || 0;
+        const margin = parseFloat(marginInput.value) || 0;
+        const qty = parseFloat(qtyInput.value) || 0;
+        const unit = actual * (1 + margin / 100);
+        const amount = unit * qty;
+        const profit = amount - actual * qty;
+        actualCostEl.textContent = actual.toFixed(2);
+        unitCostEl.textContent = unit.toFixed(2);
+        amountEl.textContent = amount.toFixed(2);
+        profitEl.textContent = profit.toFixed(2);
+      }
 
-      actualCostEl.textContent = actual.toFixed(2);
-      unitCostEl.textContent = unit.toFixed(2);
-      amountEl.textContent = amount.toFixed(2);
-      profitEl.textContent = profit.toFixed(2);
+      updateRow();
     }
+
+    addRowBtn.addEventListener('click', createRow);
+    // Create initial row
+    createRow();
   </script>
 </body>
 </html>
