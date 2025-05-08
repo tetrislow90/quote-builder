@@ -73,15 +73,18 @@
     <input type="text" id="projectTitle" placeholder="Enter project title">
   </section>
 
+  <button id="addSection">Add Section</button>
+  <button id="addRow">Add Row</button>
+  <button id="downloadPdf">Download PDF</button>
+
   <table id="quoteTable">
     <thead>
       <tr>
         <th>S/N</th>
-        <th>Scope</th>
+        <th>Work Scope</th>
         <th>Description</th>
-        <th>Details</th>
+        <th>Manual Desc</th>
         <th>Quantity</th>
-        <th>Actual Cost</th>
         <th>Margin (%)</th>
         <th>Unit Cost (w/ Margin)</th>
         <th>Amount</th>
@@ -95,11 +98,7 @@
       </tr>
     </tfoot>
   </table>
-  
-  <button id="addSection">Add Section</button>
-  <button id="addRow">Add Row</button>
-  <button id="downloadPdf">Download PDF</button>
-  
+
   <script>
     const priceData = {
       "Carpentry": [
