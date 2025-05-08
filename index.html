@@ -85,6 +85,7 @@
         <th>Description</th>
         <th>Manual Desc</th>
         <th>Quantity</th>
+        <th>Actual Cost</th>
         <th>Margin (%)</th>
         <th>Unit Cost (w/ Margin)</th>
         <th>Amount</th>
@@ -100,7 +101,7 @@
   </table>
 
   <script>
-  // Data for dropdowns
+  // Dropdown data for work scopes and descriptions
   const priceData = {
     "Carpentry": [
       { desc: "Kitchen Cabinet (Upper)", cost: 180 },
@@ -134,13 +135,27 @@
 
   const table = document.getElementById('quoteTable');
   const tbody = table.querySelector('tbody');
-  const totalAmountEl = document.getElementById('totalAmount');
+  const totalEl = document.getElementById('totalAmount');
 
+  // Section handler
+  document.getElementById('addSection').addEventListener('click', createSection);
+  // Row handler
   document.getElementById('addRow').addEventListener('click', createRow);
+  // PDF handler
   document.getElementById('downloadPdf').addEventListener('click', downloadPDF);
 
-  // Initialize with one row
+  // initialize first row
   createRow();
+
+  function createSection() {
+    const name = prompt('Enter section name:');
+    if (!name) return;
+    const tr = document.createElement('tr');
+    tr.className = 'section-header';
+    tr.innerHTML = `<td colspan="9" style="background:#ddd;font-weight:bold;">${name}</td>`;
+    tbody.appendChild(tr);
+    updateRowNumbers();
+  }
 
   function createRow() {
     const tr = document.createElement('tr');
@@ -151,7 +166,7 @@
       <td><textarea class="details" placeholder="Details"></textarea></td>
       <td><input type="number" class="qty" value="1" min="0"></td>
       <td><input type="number" class="actualCost" value="0" step="0.01"></td>
-      <td><input type="number" class="margin" value="20" min="0"></td>
+      <td><input type="number" class="margin" value="0" min="0"></td>
       <td><span class="unitCost">0.00</span></td>
       <td><span class="amount">0.00</span></td>
     `;
@@ -159,7 +174,7 @@
     updateRowNumbers();
     populateScope(tr.querySelector('.scope'));
 
-    // Attach events
+    // event listeners
     tr.querySelector('.scope').addEventListener('change', () => populateDesc(tr));
     tr.querySelector('.desc').addEventListener('change', () => computeRow(tr));
     ['qty','actualCost','margin'].forEach(cls => {
@@ -167,52 +182,52 @@
     });
   }
 
-  function populateScope(scopeEl) {
+  function populateScope(selectEl) {
     Object.keys(priceData).forEach(key => {
       const opt = document.createElement('option');
       opt.value = key;
       opt.textContent = key;
-      scopeEl.appendChild(opt);
+      selectEl.appendChild(opt);
     });
   }
 
   function populateDesc(tr) {
-    const scopeVal = tr.querySelector('.scope').value;
-    const descEl = tr.querySelector('.desc');
-    descEl.innerHTML = '<option value="">--Select Description--</option>';
-    if (priceData[scopeVal]) {
-      priceData[scopeVal].forEach(item => {
+    const scope = tr.querySelector('.scope').value;
+    const descSelect = tr.querySelector('.desc');
+    descSelect.innerHTML = '<option value="">--Select Description--</option>';
+    if (priceData[scope]) {
+      priceData[scope].forEach(item => {
         const opt = document.createElement('option');
         opt.value = item.cost;
         opt.textContent = item.desc;
-        descEl.appendChild(opt);
+        descSelect.appendChild(opt);
       });
     }
     computeRow(tr);
   }
 
   function computeRow(tr) {
-    const descCost = parseFloat(tr.querySelector('.desc').value) || 0;
+    const costFromDesc = parseFloat(tr.querySelector('.desc').value) || 0;
     const actual = parseFloat(tr.querySelector('.actualCost').value) || 0;
-    const cost = descCost || actual;
+    const baseCost = costFromDesc || actual;
     const qty = parseFloat(tr.querySelector('.qty').value) || 0;
     const margin = parseFloat(tr.querySelector('.margin').value) || 0;
-    const unit = cost * (1 + margin/100);
-    const amt = unit * qty;
-    tr.querySelector('.unitCost').textContent = unit.toFixed(2);
-    tr.querySelector('.amount').textContent = amt.toFixed(2);
+    const unitCost = baseCost * (1 + margin/100);
+    const amount = unitCost * qty;
+    tr.querySelector('.unitCost').textContent = unitCost.toFixed(2);
+    tr.querySelector('.amount').textContent = amount.toFixed(2);
     updateTotals();
   }
 
   function updateRowNumbers() {
-    tbody.querySelectorAll('tr').forEach((r, i) => {
-      r.querySelector('.sn').textContent = i + 1;
+    tbody.querySelectorAll('tr').forEach((row, idx) => {
+      row.querySelector('.sn').textContent = idx + 1;
     });
   }
 
   function updateTotals() {
-    const total = Array.from(tbody.querySelectorAll('.amount')).reduce((sum, el) => sum + parseFloat(el.textContent || 0), 0);
-    totalAmountEl.textContent = total.toFixed(2);
+    const total = Array.from(tbody.querySelectorAll('.amount')).reduce((sum, el) => sum + (parseFloat(el.textContent) || 0), 0);
+    totalEl.textContent = total.toFixed(2);
   }
 
   function downloadPDF() {
@@ -220,9 +235,9 @@
       const img = canvas.toDataURL('image/jpeg', 0.7);
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF('p', 'pt', 'a4');
-      const w = pdf.internal.pageSize.getWidth();
-      const h = canvas.height * w / canvas.width;
-      pdf.addImage(img, 'JPEG', 0, 0, w, h);
+      const width = pdf.internal.pageSize.getWidth();
+      const height = canvas.height * width / canvas.width;
+      pdf.addImage(img, 'JPEG', 0, 0, width, height);
       pdf.save('quote.pdf');
     });
   }
