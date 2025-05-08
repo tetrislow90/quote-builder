@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>El Arte Quote Builder</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
+    body { font-family: Calibri, sans-serif; margin: 20px; }
     header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
     .logo img { max-height: 100px; }
     .company-info { text-align: left; }
@@ -20,15 +20,18 @@
     table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
     th { background-color: #f0f0f0; }
-    input[type="number"], select { width: 100%; box-sizing: border-box; padding: 4px; }
-    button { padding: 8px 12px; margin-top: 10px; }
+    input[type="number"], select, textarea { width: 100%; box-sizing: border-box; padding: 4px; }
+    button { padding: 8px 12px; margin-top: 10px; margin-right: 10px; }
     tfoot th { background-color: #e0e0e0; text-align: right; }
     tfoot td { font-weight: bold; }
     footer { margin-top: 30px; font-size: 0.9em; border-top: 1px solid #ccc; padding-top: 10px; }
+    footer ul li { margin-bottom: 12px; line-height: 1.6; }
+    footer p { margin-bottom: 12px; line-height: 1.6; }
     .signature-section { display: flex; justify-content: space-between; margin-top: 30px; }
     .sign-box { width: 48%; border: 1px solid #ccc; padding: 10px; }
     .sign-box label { display: block; margin-top: 10px; font-weight: bold; }
     .sign-box input { width: 100%; padding: 6px; box-sizing: border-box; }
+    .section-header td { background: #ddd; font-weight: bold; text-align: left; }
   </style>
   <!-- PDF libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -41,7 +44,7 @@
       <p>UEN 202020065R<br>86 Marine Parade Central #04-303<br>Marine Parade Promenade<br>Singapore 440086<br>www.elartedesign.com</p>
     </div>
     <div class="logo">
-      <img src="logo.png" alt="El Arte Logo">
+      <img src="logo.jpg" alt="El Arte Logo">
     </div>
   </header>
 
@@ -71,18 +74,21 @@
     <input type="text" id="projectTitle" placeholder="Enter project title">
   </section>
 
+  <button id="addSection">Add Section</button>
+  <button id="addRow">Add Row</button>
+  <button id="downloadPdf">Download PDF</button>
+
   <table id="quoteTable">
     <thead>
       <tr>
         <th>S/N</th>
         <th>Work Scope</th>
         <th>Description</th>
+        <th>Manual Desc</th>
         <th>Quantity</th>
         <th>Margin (%)</th>
-        <th>Actual Cost</th>
         <th>Unit Cost (w/ Margin)</th>
         <th>Amount</th>
-        <th>Profit</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -90,12 +96,9 @@
       <tr>
         <th colspan="7">Totals</th>
         <td id="totalAmount">0.00</td>
-        <td id="totalProfit">0.00</td>
       </tr>
     </tfoot>
   </table>
-  <button id="addRow">Add Row</button>
-  <button id="downloadPdf">Download PDF</button>
 
   <script>
     const priceData = {
@@ -129,95 +132,94 @@
       ]
     };
 
-    const { jsPDF } = window.jspdf;
-    const tableBody = document.querySelector('#quoteTable tbody');
+    const table = document.getElementById('quoteTable');
+    const tbody = table.querySelector('tbody');
     const totalAmountEl = document.getElementById('totalAmount');
-    const totalProfitEl = document.getElementById('totalProfit');
-    const addRowBtn = document.getElementById('addRow');
-    const downloadBtn = document.getElementById('downloadPdf');
     let rowCount = 0;
+
+    function updateTotals() {
+      let total = 0;
+      tbody.querySelectorAll('tr').forEach(r => {
+        const amt = parseFloat(r.querySelector('.amount').textContent) || 0;
+        total += amt;
+      });
+      totalAmountEl.textContent = total.toFixed(2);
+    }
 
     function createRow() {
       rowCount++;
-      const row = document.createElement('tr');
-      row.innerHTML = `
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
         <td>${rowCount}</td>
         <td><select class="scope"><option value="">--Select--</option></select></td>
         <td><select class="desc"><option value="">--Select--</option></select></td>
+        <td><textarea class="manual" placeholder="Manual description"></textarea></td>
         <td><input type="number" class="qty" value="1" min="0"></td>
         <td><input type="number" class="margin" value="20" min="0"></td>
-        <td><span class="actualCost">0.00</span></td>
         <td><span class="unitCost">0.00</span></td>
         <td><span class="amount">0.00</span></td>
-        <td><span class="profit">0.00</span></td>
       `;
-      tableBody.appendChild(row);
+      tbody.appendChild(tr);
 
-      const scopeSelect = row.querySelector('.scope');
-      const descSelect = row.querySelector('.desc');
-      const qtyInput = row.querySelector('.qty');
-      const marginInput = row.querySelector('.margin');
-      const actualCostEl = row.querySelector('.actualCost');
-      const unitCostEl = row.querySelector('.unitCost');
-      const amountEl = row.querySelector('.amount');
-      const profitEl = row.querySelector('.profit');
+      const scope = tr.querySelector('.scope');
+      const desc = tr.querySelector('.desc');
+      const manual = tr.querySelector('.manual');
+      const qty = tr.querySelector('.qty');
+      const margin = tr.querySelector('.margin');
+      const unitCostEl = tr.querySelector('.unitCost');
+      const amountEl = tr.querySelector('.amount');
 
-      Object.keys(priceData).forEach(scope => {
-        const opt = document.createElement('option'); opt.value = scope; opt.textContent = scope; scopeSelect.appendChild(opt);
+      Object.keys(priceData).forEach(s => {
+        const o = document.createElement('option'); o.value = s; o.text = s; scope.add(o);
       });
 
-      scopeSelect.addEventListener('change', () => {
-        const items = priceData[scopeSelect.value] || [];
-        descSelect.innerHTML = '<option value="">--Select--</option>';
-        items.forEach(item => {
-          const opt = document.createElement('option'); opt.value = item.cost; opt.textContent = item.desc; descSelect.appendChild(opt);
-        });
-        updateRow();
+      scope.addEventListener('change', () => {
+        const items = priceData[scope.value] || [];
+        desc.innerHTML = '<option>--Select--</option>';
+        items.forEach(i => { const o = document.createElement('option'); o.value = i.cost; o.text = i.desc; desc.add(o); });
+        compute();
       });
+      desc.addEventListener('change', compute);
+      manual.addEventListener('input', compute);
+      qty.addEventListener('input', compute);
+      margin.addEventListener('input', compute);
 
-      descSelect.addEventListener('change', updateRow);
-      qtyInput.addEventListener('input', updateRow);
-      marginInput.addEventListener('input', updateRow);
-
-      function updateRow() {
-        const actual = parseFloat(descSelect.value) || 0;
-        const margin = parseFloat(marginInput.value) || 0;
-        const qty = parseFloat(qtyInput.value) || 0;
-        const unit = actual * (1 + margin / 100);
-        const amount = unit * qty;
-        const profit = amount - actual * qty;
-        actualCostEl.textContent = actual.toFixed(2);
+      function compute() {
+        const actual = manual.value ? 0 : parseFloat(desc.value) || 0;
+        const unit = actual * (1 + (parseFloat(margin.value)||0)/100);
+        const amt = unit * (parseFloat(qty.value)||0);
         unitCostEl.textContent = unit.toFixed(2);
-        amountEl.textContent = amount.toFixed(2);
-        profitEl.textContent = profit.toFixed(2);
+        amountEl.textContent = amt.toFixed(2);
         updateTotals();
       }
-
-      updateRow();
+      compute();
     }
 
-    function updateTotals() {
-      let totalAmount = 0; let totalProfit = 0;
-      document.querySelectorAll('#quoteTable tbody tr').forEach(row => {
-        totalAmount += parseFloat(row.querySelector('.amount').textContent) || 0;
-        totalProfit += parseFloat(row.querySelector('.profit').textContent) || 0;
-      });
-      totalAmountEl.textContent = totalAmount.toFixed(2);
-      totalProfitEl.textContent = totalProfit.toFixed(2);
-    }
-
-    addRowBtn.addEventListener('click', createRow);
+    document.getElementById('addRow').addEventListener('click', createRow);
+    document.getElementById('addSection').addEventListener('click', () => {
+      const section = prompt('Enter section name');
+      if (section) {
+        const tr = document.createElement('tr');
+        tr.className = 'section-header';
+        tr.innerHTML = `<td colspan="8">${section}</td>`;
+        tbody.appendChild(tr);
+      }
+    });
     createRow();
 
-    downloadBtn.addEventListener('click', () => {
-      html2canvas(document.body).then(canvas => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'pt', 'a4');
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    document.getElementById('downloadPdf').addEventListener('click', () => {
+      // hide manual and margin fields before capture
+      tbody.querySelectorAll('.manual, .margin').forEach(el => el.style.display='none');
+      const scriptEl = document.currentScript;
+      html2canvas(document.body, { scale: 0.5 }).then(canvas => {
+        const img = canvas.toDataURL('image/jpeg', 0.7);
+        const pdf = new jsPDF('p','pt','a4');
+        const w = pdf.internal.pageSize.getWidth();
+        const h = canvas.height * w / canvas.width;
+        pdf.addImage(img,'JPEG',0,0,w,h);
         pdf.save('quote.pdf');
+        // restore
+        tbody.querySelectorAll('.manual, .margin').forEach(el => el.style.display='');
       });
     });
   </script>
@@ -230,7 +232,7 @@
       <li>A: 20% of the contract sum shall be paid as a non-refundable deposit.</li>
       <li>B: 40% of the contract sum shall be paid before the commencement of any work.</li>
       <li>C: 35% of the contract sum shall be paid before the installation of carpentry work.</li>
-      <li>5% of the contract sum shall be paid upon handing over to the client.</li>
+      <li>D: 5% of the contract sum shall be paid upon handing over to the client.</li>
     </ul>
     <h3>Terms & Conditions</h3>
     <ul>
@@ -245,24 +247,9 @@
       <li>9. The price agreed upon acceptance of this quotation by the client does not include the costs of engagement of architects, engineers, surveyors or other professionals which may be required in case it is required. El Arte Design will inform the client as soon as it determines, in its professional judgment, that the engagement of such professionals is required.</li>
       <li>10. All water and electricity charges shall be borne by the owner during the renovation or construction period.</li>
       <li>11. All payments shall be made to El Arte Design. El Arte Design shall provide the client an official tax invoice upon receipt of payment.</li>
-      <li>12. The terms and conditions of this quotation are enforceable against both EL ARTE Design and the client. The client is required to go through the terms carefully and clarify any doubts before signing the quotation.  Once signed, the client is deemed to have read, understood and agreed to the terms and conditions herein.</li>
+      <li>12. The terms and conditions of this quotation are enforceable against both EL ARTE Design and the client. The client is required to go through the terms carefully and clarify any doubts before signing the quotation. Once signed, the client is deemed to have read, understood and agreed to the terms and conditions herein.</li>
       <li>13. In the event that there are disputes, controversies or differences relating to this quotation and the scope of work contained herein (“dispute”), the parties will in the first instance make best efforts to resolve the matter amicably through negotiations. Should such negotiations fail, the parties agree to refer the dispute to mediation in Singapore, in accordance with the Law Society Mediation Rules for the time being in force.</li>
     </ul>
   </footer>
-
-  <section class="signature-section">
-    <div class="sign-box">
-      <label>Designer Signature:</label>
-      <input type="text" placeholder="Name">
-      <label>Date:</label>
-      <input type="date">
-    </div>
-    <div class="sign-box">
-      <label>Customer Signature:</label>
-      <input type="text" placeholder="Name">
-      <label>Date:</label>
-      <input type="date">
-    </div>
-  </section>
 </body>
 </html>
