@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>El Arte Quote Builder</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    form label { display: block; margin: 10px 0; }
+    input, select { width: 200px; padding: 4px; }
+    #results p { margin: 6px 0; }
+    #results span { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>El Arte Quote Builder (Free)</h1>
+  <form id="quoteForm">
+    <label>
+      Work Scope:
+      <select id="scopeSelect">
+        <option value="">--Select Scope--</option>
+      </select>
+    </label>
+    <label>
+      Description:
+      <select id="descSelect">
+        <option value="">--Select Item--</option>
+      </select>
+    </label>
+    <label>
+      Quantity:
+      <input type="number" id="quantity" value="1" min="0">
+    </label>
+    <label>
+      Margin (%):
+      <input type="number" id="margin" value="20" min="0">
+    </label>
+  </form>
+  <div id="results">
+    <p>Actual Cost: SGD <span id="actualCost">0.00</span></p>
+    <p>Unit Cost (w/ Margin): SGD <span id="unitCost">0.00</span></p>
+    <p>Amount: SGD <span id="amount">0.00</span></p>
+    <p>Profit: SGD <span id="profit">0.00</span></p>
+  </div>
+  <script>
+    // Sample cost data (replace with real values as needed)
+    const priceData = {
+      "Carpentry": [
+        { desc: "Kitchen Cabinet (Upper)", cost: 180 },
+        { desc: "Wardrobe (Sliding Door)", cost: 250 }
+      ],
+      "Electrical Works": [
+        { desc: "Double Socket Point", cost: 90 }
+      ],
+      "Tiling": [
+        { desc: "Floor Tiling (600x600)", cost: 8 }
+      ],
+      "Painting": [
+        { desc: "Whole House", cost: 1800 }
+      ]
+    };
+
+    const scopeSelect = document.getElementById('scopeSelect');
+    const descSelect = document.getElementById('descSelect');
+    const qtyInput = document.getElementById('quantity');
+    const marginInput = document.getElementById('margin');
+    const actualCostEl = document.getElementById('actualCost');
+    const unitCostEl = document.getElementById('unitCost');
+    const amountEl = document.getElementById('amount');
+    const profitEl = document.getElementById('profit');
+
+    // Populate Work Scope dropdown
+    Object.keys(priceData).forEach(scope => {
+      const opt = document.createElement('option');
+      opt.value = scope;
+      opt.textContent = scope;
+      scopeSelect.appendChild(opt);
+    });
+
+    // When scope changes, populate Description dropdown
+    scopeSelect.addEventListener('change', () => {
+      const items = priceData[scopeSelect.value] || [];
+      descSelect.innerHTML = '<option value="">--Select Item--</option>';
+      items.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.cost;              // store cost in value
+        opt.textContent = item.desc;
+        descSelect.appendChild(opt);
+      });
+      updateResults();
+    });
+
+    // Update whenever Description, Quantity, or Margin changes
+    descSelect.addEventListener('change', updateResults);
+    qtyInput.addEventListener('input', updateResults);
+    marginInput.addEventListener('input', updateResults);
+
+    function updateResults() {
+      const actual = parseFloat(descSelect.value) || 0;
+      const margin = parseFloat(marginInput.value) || 0;
+      const qty = parseFloat(qtyInput.value) || 0;
+
+      const unit = actual * (1 + margin / 100);
+      const amount = unit * qty;
+      const profit = amount - actual * qty;
+
+      actualCostEl.textContent = actual.toFixed(2);
+      unitCostEl.textContent = unit.toFixed(2);
+      amountEl.textContent = amount.toFixed(2);
+      profitEl.textContent = profit.toFixed(2);
+    }
+  </script>
+</body>
+</html>
