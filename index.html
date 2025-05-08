@@ -6,15 +6,71 @@
   <title>El Arte Quote Builder</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+    .company-info { text-align: right; }
+    .company-info h2 { margin: 0; }
+    .meta, .customer { display: flex; flex-wrap: wrap; margin-bottom: 20px; }
+    .meta div, .customer div { flex: 1 1 200px; margin-right: 20px; margin-bottom: 10px; }
+    label { font-weight: bold; display: block; margin-bottom: 4px; }
+    input[type="text"], input[type="date"], input[type="email"], input[type="tel"] { width: 100%; padding: 6px; box-sizing: border-box; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
     th { background-color: #f0f0f0; }
     input[type="number"], select { width: 100%; box-sizing: border-box; padding: 4px; }
     button { padding: 8px 12px; margin-top: 10px; }
+    tfoot th { background-color: #e0e0e0; text-align: right; }
+    tfoot td { font-weight: bold; }
   </style>
 </head>
 <body>
-  <h1>El Arte Quote Builder</h1>
+  <header>
+    <div class="logo">
+      <img src="logo.png" alt="Company Logo" style="max-height:100px;">
+    </div>
+    <div class="company-info">
+      <h2>El Arte Interior Design</h2>
+      <p>123 Creative Avenue<br>Singapore 456789<br>Tel: +65 6123 4567<br>Email: info@elarte.com.sg</p>
+    </div>
+  </header>
+
+  <section class="customer">
+    <div>
+      <label for="custName">Customer Name</label>
+      <input type="text" id="custName" placeholder="Enter name">
+    </div>
+    <div>
+      <label for="custAddress">Customer Address</label>
+      <input type="text" id="custAddress" placeholder="Enter address">
+    </div>
+    <div>
+      <label for="custMobile">Mobile</label>
+      <input type="tel" id="custMobile" placeholder="Enter mobile">
+    </div>
+    <div>
+      <label for="custEmail">Email</label>
+      <input type="email" id="custEmail" placeholder="Enter email">
+    </div>
+  </section>
+
+  <section class="meta">
+    <div>
+      <label for="quoteNumber">Quote Number</label>
+      <input type="text" id="quoteNumber" placeholder="e.g. Q-0001">
+    </div>
+    <div>
+      <label for="quoteDate">Date</label>
+      <input type="date" id="quoteDate">
+    </div>
+    <div>
+      <label for="validity">Validity</label>
+      <input type="text" id="validity" placeholder="e.g. 30 days">
+    </div>
+    <div>
+      <label for="projectTitle">Project Title</label>
+      <input type="text" id="projectTitle" placeholder="Enter project title">
+    </div>
+  </section>
+
   <table id="quoteTable">
     <thead>
       <tr>
@@ -29,8 +85,14 @@
         <th>Profit</th>
       </tr>
     </thead>
-    <tbody>
-    </tbody>
+    <tbody></tbody>
+    <tfoot>
+      <tr>
+        <th colspan="7">Totals</th>
+        <td id="totalAmount">0.00</td>
+        <td id="totalProfit">0.00</td>
+      </tr>
+    </tfoot>
   </table>
   <button id="addRow">Add Row</button>
 
@@ -52,6 +114,8 @@
     };
 
     const tableBody = document.querySelector('#quoteTable tbody');
+    const totalAmountEl = document.getElementById('totalAmount');
+    const totalProfitEl = document.getElementById('totalProfit');
     const addRowBtn = document.getElementById('addRow');
     let rowCount = 0;
 
@@ -60,8 +124,8 @@
       const row = document.createElement('tr');
       row.innerHTML = `
         <td>${rowCount}</td>
-        <td><select class="scope"></select></td>
-        <td><select class="desc"></select></td>
+        <td><select class="scope"><option value="">--Select--</option></select></td>
+        <td><select class="desc"><option value="">--Select--</option></select></td>
         <td><input type="number" class="qty" value="1" min="0"></td>
         <td><input type="number" class="margin" value="20" min="0"></td>
         <td><span class="actualCost">0.00</span></td>
@@ -80,7 +144,7 @@
       const amountEl = row.querySelector('.amount');
       const profitEl = row.querySelector('.profit');
 
-      // Populate Work Scope
+      // Populate Work Scope dropdown
       Object.keys(priceData).forEach(scope => {
         const opt = document.createElement('option');
         opt.value = scope;
@@ -115,14 +179,25 @@
         unitCostEl.textContent = unit.toFixed(2);
         amountEl.textContent = amount.toFixed(2);
         profitEl.textContent = profit.toFixed(2);
+        updateTotals();
       }
 
       updateRow();
     }
 
+    function updateTotals() {
+      let totalAmount = 0;
+      let totalProfit = 0;
+      document.querySelectorAll('#quoteTable tbody tr').forEach(row => {
+        totalAmount += parseFloat(row.querySelector('.amount').textContent) || 0;
+        totalProfit += parseFloat(row.querySelector('.profit').textContent) || 0;
+      });
+      totalAmountEl.textContent = totalAmount.toFixed(2);
+      totalProfitEl.textContent = totalProfit.toFixed(2);
+    }
+
     addRowBtn.addEventListener('click', createRow);
-    // Create initial row
-    createRow();
+    createRow(); // initial row
   </script>
 </body>
 </html>
