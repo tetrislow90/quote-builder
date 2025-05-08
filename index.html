@@ -7,6 +7,7 @@
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
     header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+    .logo img { max-height: 100px; }
     .company-info { text-align: right; }
     .company-info h2 { margin: 0; }
     .meta, .customer { display: flex; flex-wrap: wrap; margin-bottom: 20px; }
@@ -25,11 +26,11 @@
 <body>
   <header>
     <div class="logo">
-      <img src="logo.png" alt="Company Logo" style="max-height:100px;">
+      <img src="logo.jpg" alt="El Arte Logo">
     </div>
     <div class="company-info">
-      <h2>El Arte Interior Design</h2>
-      <p>123 Creative Avenue<br>Singapore 456789<br>Tel: +65 6123 4567<br>Email: info@elarte.com.sg</p>
+      <h2>EL ARTE DESIGN PTE. LTD</h2>
+      <p>UEN 202020065R<br>86 Marine Parade Central #04-303<br>Marine Parade Promenade<br>Singapore 440086<br>www.elartedesign.com</p>
     </div>
   </header>
 
@@ -144,22 +145,15 @@
       const amountEl = row.querySelector('.amount');
       const profitEl = row.querySelector('.profit');
 
-      // Populate Work Scope dropdown
       Object.keys(priceData).forEach(scope => {
-        const opt = document.createElement('option');
-        opt.value = scope;
-        opt.textContent = scope;
-        scopeSelect.appendChild(opt);
+        const opt = document.createElement('option'); opt.value = scope; opt.textContent = scope; scopeSelect.appendChild(opt);
       });
 
       scopeSelect.addEventListener('change', () => {
         const items = priceData[scopeSelect.value] || [];
         descSelect.innerHTML = '<option value="">--Select--</option>';
         items.forEach(item => {
-          const opt = document.createElement('option');
-          opt.value = item.cost;
-          opt.textContent = item.desc;
-          descSelect.appendChild(opt);
+          const opt = document.createElement('option'); opt.value = item.cost; opt.textContent = item.desc; descSelect.appendChild(opt);
         });
         updateRow();
       });
@@ -186,8 +180,7 @@
     }
 
     function updateTotals() {
-      let totalAmount = 0;
-      let totalProfit = 0;
+      let totalAmount = 0; let totalProfit = 0;
       document.querySelectorAll('#quoteTable tbody tr').forEach(row => {
         totalAmount += parseFloat(row.querySelector('.amount').textContent) || 0;
         totalProfit += parseFloat(row.querySelector('.profit').textContent) || 0;
@@ -197,7 +190,7 @@
     }
 
     addRowBtn.addEventListener('click', createRow);
-    createRow(); // initial row
+    createRow();
   </script>
 </body>
 </html>
